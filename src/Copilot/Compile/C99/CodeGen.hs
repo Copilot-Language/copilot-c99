@@ -38,12 +38,20 @@ mkextcpydecln (External name cpyname ty) = decln where
   decln = C.VarDecln (Just C.Static) cty cpyname Nothing
 
 -- | Make a C buffer variable and initialise it with the stream buffer.
+--
+-- The buffer has one extra cell so that updates in a single step are all
+-- independent: for each stream, the next entry modulo the size is updated,
+-- using the current index pointer, which is guaranteed not to be the same as
+-- that next index.
+--
+-- Here we tack on a 0 at the end of the array initializer. This value will
+-- never be read before it is written.
 mkbuffdecln :: Id -> Type a -> [a] -> C.Decln
 mkbuffdecln sid ty xs = C.VarDecln (Just C.Static) cty name initvals where
   name     = streamname sid
   cty      = C.Array (transtype ty) (Just $ C.LitInt $ fromIntegral buffsize)
-  buffsize = length xs
-  initvals = Just $ C.InitArray $ map (C.InitExpr . constty ty) xs
+  buffsize = length xs + 1
+  initvals = Just $ C.InitArray $ (map (C.InitExpr . constty ty) xs ++ [C.InitExpr (C.LitInt 0)])
 
 -- | Make a C index variable and initialise it to 0.
 mkindexdecln :: Id -> C.Decln
@@ -88,7 +96,7 @@ mkstep streams triggers exts = C.FunDef void "step" [] declns stmts where
       size = C.LitInt $ fromIntegral $ tysize ty
     _ -> C.Expr $ C.Index var index C..= val where
       var   = C.Ident $ streamname sid
-      index = C.Ident $ indexname sid
+      index = ((C.Ident $ indexname sid) C..+ (C.LitInt 1)) C..% (C.LitInt 2)
       val   = C.Funcall (C.Ident $ generatorname sid) []
 
   -- Code to update the index.
@@ -96,7 +104,7 @@ mkstep streams triggers exts = C.FunDef void "step" [] declns stmts where
   mkupdateindex (Stream sid buff expr ty) = C.Expr $ globvar C..= val where
     globvar = C.Ident $ indexname sid
     index   = (C..++) (C.Ident $ indexname sid)
-    val     = index C..% (C.LitInt $ fromIntegral len)
+    val     = index C..% (C.LitInt $ (fromIntegral len + 1))
     len     = length buff
 
   -- Write a call to the memcpy function.
