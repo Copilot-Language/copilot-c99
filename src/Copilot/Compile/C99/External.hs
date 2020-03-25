@@ -32,8 +32,8 @@ gatherexts streams triggers = streamsexts `extunion` triggersexts where
     guardexts = exprexts guard
     argexts   = concat $ map uexprexts args
 
-  uexprexts :: UExpr -> [External]
-  uexprexts (UExpr _ expr) = exprexts expr
+  uexprexts :: (Maybe String, UExpr) -> [External]
+  uexprexts (_, UExpr _ expr) = exprexts expr
 
   exprexts :: Expr a -> [External]
   exprexts expr = let rec = exprexts in case expr of

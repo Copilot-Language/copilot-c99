@@ -153,5 +153,5 @@ gatherexprs :: [Stream] -> [Trigger] -> [UExpr]
 gatherexprs streams triggers =  map streamexpr streams
                              ++ concatMap triggerexpr triggers where
   streamexpr  (Stream _ _ expr ty)   = UExpr ty expr
-  triggerexpr (Trigger _ guard args) = UExpr Bool guard : args
+  triggerexpr (Trigger _ guard args) = UExpr Bool guard : (fmap snd args)
 

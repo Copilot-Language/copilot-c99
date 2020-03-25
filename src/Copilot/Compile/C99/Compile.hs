@@ -80,8 +80,10 @@ compilec spec = C.TransUnit declns funs where
       guarddef = genfun (guardname name) guard Bool
       argdefs  = map arggen (zip (argnames name) args)
 
-      arggen :: (String, UExpr) -> C.FunDef
-      arggen (argname, UExpr ty expr) = genfun argname expr ty
+      arggen :: (String, (Maybe String, UExpr)) -> C.FunDef
+      arggen (argname, (mname, UExpr ty expr)) = case mname of
+        Just name -> genfun name expr ty
+        Nothing   -> genfun argname expr ty
 
 -- | Generate the .h file from a spec.
 compileh :: Spec -> C.TransUnit
@@ -114,7 +116,9 @@ compileh spec = C.TransUnit declns [] where
     extfundecln (Trigger name _ args) = C.FunDecln Nothing cty name params where
         cty    = C.TypeSpec C.Void
         params = map mkparam $ zip (argnames name) args
-        mkparam (name, UExpr ty _) = C.Param (transtype ty) name
+        mkparam (name, (mname, UExpr ty _)) = case mname of
+          Just name' -> C.Param (transtype ty) name'
+          Nothing    -> C.Param (transtype ty) name
 
   -- Declaration for the step function.
   stepdecln :: C.Decln
