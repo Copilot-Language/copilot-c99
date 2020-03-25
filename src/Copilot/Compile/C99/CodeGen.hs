@@ -84,8 +84,10 @@ mkstep streams triggers exts = C.FunDef void "step" [] declns stmts where
   mktriggercheck (Trigger name guard args) = C.If guard' firetrigger where
     guard'      = C.Funcall (C.Ident $ guardname name) []
     firetrigger = [C.Expr $ C.Funcall (C.Ident name) args'] where
-      args'        = take (length args) (map argcall (argnames name))
-      argcall name = C.Funcall (C.Ident name) []
+      args' = map argcall (zip (argnames name) args)
+      argcall (aname, (maname, arg)) = case maname of
+        Just aname' -> C.Funcall (C.Ident (name ++ "_arg_" ++ aname')) []
+        Nothing     -> C.Funcall (C.Ident aname)  []
 
   -- Code to update the global buffer.
   mkupdatebuffer :: Stream -> C.Stmt
