@@ -81,9 +81,9 @@ compilec spec = C.TransUnit declns funs where
       argdefs  = map arggen (zip (argnames name) args)
 
       arggen :: (String, (Maybe String, UExpr)) -> C.FunDef
-      arggen (argname, (mname, UExpr ty expr)) = case mname of
-        Just name -> genfun name expr ty
-        Nothing   -> genfun argname expr ty
+      arggen (aname, (maname, UExpr ty expr)) = case maname of
+        Just aname' -> genfun (name ++ "_arg_" ++ aname') expr ty
+        Nothing     -> genfun aname expr ty
 
 -- | Generate the .h file from a spec.
 compileh :: Spec -> C.TransUnit
